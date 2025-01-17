@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1, minimum-scale=1">
+  <title>YouTube Downloader</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Disclaimer Modal -->
+  <div id="disclaimer" class="modal">
+    <div class="modal-content">
+      <h2>Disclaimer & Agreement</h2>
+      <p>Welcome to our YouTube Downloader. By using this service, you agree to:</p>
+      <ul>
+        <li>Use downloaded content for personal use only</li>
+        <li>Respect copyright and intellectual property rights</li>
+        <li>Not distribute downloaded content commercially</li>
+      </ul>
+      <button id="acceptBtn" class="accept-btn">I Agree</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="theme-toggle">
+        <button id="themeToggle">
+          <i class="fas fa-sun"></i>
+        </button>
+      </div>
+
+      <h1>YouTube Downloader</h1>
+
+      <form id="downloadForm">
+        <div class="input-group">
+          <i class="input-icon fas fa-link"></i>
+          <input 
+            type="url" 
+            id="videoURL" 
+            name="videoURL" 
+            placeholder="Paste YouTube URL here" 
+            required
+          >
+        </div>
+        <button type="submit">
+          <i class="fas fa-download"></i>
+          <span>Download</span>
+          <div class="loader" id="loader"></div>
+        </button>
+      </form>
+
+      <div id="downloadLinks" class="download-options">
+        <div class="video-info">
+          <div class="video-title" id="title"></div>
+          <div class="video-container">
+            <img id="thumbnail" src="" alt="Video thumbnail">
+            <video id="videoPlayer" controls>
+              <source id="videoSource" src="" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </div>
+
+        <a id="audio" href="" class="download-button" target="_blank">
+          <i class="fas fa-music"></i>
+          <span>Download Audio</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = themeToggle.querySelector('i');
+    const html = document.documentElement;
+
+    themeToggle.addEventListener('click', () => {
+      if (html.getAttribute('data-theme') === 'light') {
+        html.setAttribute('data-theme', 'dark');
+        themeIcon.classList.remove('fa-sun');
+        themeIcon.classList.add('fa-moon');
+      } else {
+        html.setAttribute('data-theme', 'light');
+        themeIcon.classList.remove('fa-moon');
+        themeIcon.classList.add('fa-sun');
+      }
+    });
+
+    // Disclaimer modal
+    const disclaimer = document.getElementById('disclaimer');
+    const acceptBtn = document.getElementById('acceptBtn');
+
+    if (!localStorage.getItem('disclaimerAccepted')) {
+      disclaimer.style.display = 'flex';
+    }
+
+    acceptBtn.addEventListener('click', () => {
+      disclaimer.style.display = 'none';
+      localStorage.setItem('disclaimerAccepted', 'true');
+    });
+
+    // Form submission and video handling
+    const form = document.getElementById('downloadForm');
+    const downloadLinks = document.getElementById('downloadLinks');
+    const titleElement = document.getElementById('title');
+    const thumbnailElement = document.getElementById('thumbnail');
+    const videoElement = document.getElementById('videoPlayer');
+    const videoSourceElement = document.getElementById('videoSource');
+    const audioElement = document.getElementById('audio');
+    const videoURLInput = document.getElementById('videoURL');
+    const submitButton = form.querySelector('button[type="submit"]');
+    const loader = document.getElementById('loader');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      submitButton.disabled = true;
+      loader.style.display = 'block';
+      submitButton.querySelector('span').textContent = 'Processing...';
+
+      downloadLinks.classList.remove('visible');
+      videoElement.style.display = 'none';
+      thumbnailElement.style.display = 'none';
+
+      try {
+        const videoURL = videoURLInput.value;
+        const response = await fetch('/download', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: `videoURL=${encodeURIComponent(videoURL)}`
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        titleElement.textContent = data.title;
+        thumbnailElement.src = data.thumb;
+        videoSourceElement.src = data.video;
+        audioElement.href = data.audio;
+
+        downloadLinks.classList.add('visible');
+        videoURLInput.value = '';
+        thumbnailElement.style.display = 'block';
+
+        setTimeout(() => {
+          thumbnailElement.style.display = 'none';
+          videoElement.style.display = 'block';
+          videoElement.load();
+          videoElement.play();
+        }, 5000);
+
+      } catch (error) {
+        alert(`Error: ${error.message}`);
+      } finally {
+        submitButton.disabled = false;
+        loader.style.display = 'none';
+        submitButton.querySelector('span').textContent = 'Download';
+      }
+    });
+  </script>
+</body>
+</html>
