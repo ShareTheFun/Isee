@@ -27,7 +27,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background-color: var(--background);
   color: var(--text);
   line-height: 1.5;
@@ -279,6 +279,25 @@ button:disabled {
   transform: translateY(-2px);
 }
 
+/* Audio player styles */
+.audio-container {
+  margin-top: 1rem;
+}
+
+#audioPlayer {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+#audioPlayer::-webkit-media-controls-panel {
+  background-color: var(--background);
+}
+
+#audioPlayer::-webkit-media-controls-current-time-display,
+#audioPlayer::-webkit-media-controls-time-remaining-display {
+  color: var(--text);
+}
+
 @keyframes modalSlideIn {
   from {
     opacity: 0;
@@ -291,8 +310,12 @@ button:disabled {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 640px) {
@@ -314,3 +337,4 @@ button:disabled {
     padding: 1.5rem;
   }
 }
+

@@ -62,10 +62,16 @@
                     </div>
                 </div>
 
-                <a id="audio" href="" class="download-button" target="_blank">
-                    <i class="fas fa-music"></i>
-                    <span>Download Audio</span>
-                </a>
+                <div id="audioContainer" class="audio-container">
+                    <button id="audioButton" class="download-button">
+                        <i class="fas fa-music"></i>
+                        <span>Download Audio</span>
+                    </button>
+                    <audio id="audioPlayer" controls style="display: none; width: 100%; margin-top: 10px;">
+                        <source id="audioSource" src="/placeholder.svg" type="audio/mpeg">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
             </div>
         </div>
     </div>
@@ -108,7 +114,9 @@
     const thumbnailElement = document.getElementById('thumbnail');
     const videoElement = document.getElementById('videoPlayer');
     const videoSourceElement = document.getElementById('videoSource');
-    const audioElement = document.getElementById('audio');
+    const audioButton = document.getElementById('audioButton');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const audioSource = document.getElementById('audioSource');
     const videoURLInput = document.getElementById('videoURL');
     const submitButton = form.querySelector('button[type="submit"]');
     const loader = document.getElementById('loader');
@@ -123,6 +131,9 @@
         downloadLinks.classList.remove('visible');
         videoElement.style.display = 'none';
         thumbnailElement.style.display = 'none';
+        audioPlayer.style.display = 'none';
+        audioButton.style.display = 'flex';
+        audioButton.querySelector('span').textContent = 'Download Audio';
 
         try {
             const videoURL = videoURLInput.value;
@@ -143,10 +154,7 @@
             titleElement.textContent = data.title;
             thumbnailElement.src = data.thumb;
             videoSourceElement.src = data.video;
-            audioElement.href = data.audio;
-
-            // Set the download attribute for the audio link
-            audioElement.setAttribute('download', `${data.title}.mp3`);
+            audioSource.src = data.audio;
 
             downloadLinks.classList.add('visible');
             videoURLInput.value = '';
@@ -168,15 +176,18 @@
         }
     });
 
-    // Ensure audio download button opens the URL directly
-    audioElement.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (audioElement.href) {
-            window.open(audioElement.href, '_blank');
+    // Audio button functionality
+    audioButton.addEventListener('click', () => {
+        if (audioSource.src) {
+            audioButton.style.display = 'none';
+            audioPlayer.style.display = 'block';
+            audioPlayer.load();
+            audioPlayer.play();
         } else {
-            alert('Audio download link is not available.');
+            alert('Audio is not available yet. Please download a video first.');
         }
     });
     </script>
 </body>
 </html>
+
