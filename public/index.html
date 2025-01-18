@@ -31,6 +31,7 @@
             </div>
 
             <h1>YouTube Downloader</h1>
+            <div class="version">v2.1(beta)</div>
 
             <form id="downloadForm">
                 <div class="input-group">
@@ -92,19 +93,6 @@
             themeIcon.classList.remove('fa-moon');
             themeIcon.classList.add('fa-sun');
         }
-    });
-
-    // Disclaimer modal
-    const disclaimer = document.getElementById('disclaimer');
-    const acceptBtn = document.getElementById('acceptBtn');
-
-    if (!localStorage.getItem('disclaimerAccepted')) {
-        disclaimer.style.display = 'flex';
-    }
-
-    acceptBtn.addEventListener('click', () => {
-        disclaimer.style.display = 'none';
-        localStorage.setItem('disclaimerAccepted', 'true');
     });
 
     // Form submission and video handling
@@ -187,7 +175,19 @@
             alert('Audio is not available yet. Please download a video first.');
         }
     });
+
+    // Disclaimer modal
+    const disclaimer = document.getElementById('disclaimer');
+    const acceptBtn = document.getElementById('acceptBtn');
+
+    if (!localStorage.getItem('disclaimerAccepted')) {
+        disclaimer.style.display = 'flex';
+    }
+
+    acceptBtn.addEventListener('click', () => {
+        disclaimer.style.display = 'none';
+        localStorage.setItem('disclaimerAccepted', 'true');
+    });
     </script>
 </body>
 </html>
-
