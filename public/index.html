@@ -12,26 +12,33 @@
     <div id="disclaimer" class="modal">
         <div class="modal-content">
             <h2>Disclaimer & Agreement</h2>
-            <p>Welcome to our YouTube Downloader. By using this service, you agree to:</p>
+            <p>Welcome to our YouTube Downloader. Please read and acknowledge the following:</p>
             <ul>
-                <li>Use downloaded content for personal use only</li>
-                <li>Respect copyright and intellectual property rights</li>
-                <li>Not distribute downloaded content commercially</li>
+                <li>This application is an independent project and is not affiliated with or endorsed by YouTube or any other third-party services.</li>
+                <li>All content downloaded through this application is the sole responsibility of the user.</li>
+                <li>By using this service, you agree to:</li>
+                <ul>
+                    <li>Use downloaded content for personal use only</li>
+                    <li>Respect copyright and intellectual property rights</li>
+                    <li>Not distribute downloaded content commercially</li>
+                </ul>
+                <li>The developer of this application is not responsible for any misuse or violation of YouTube's terms of service.</li>
             </ul>
-            <button id="acceptBtn" class="accept-btn">I Agree</button>
+            <button id="acceptBtn" class="accept-btn">I Understand and Agree</button>
         </div>
     </div>
 
     <div class="container">
         <div class="card">
-            <div class="theme-toggle">
-                <button id="themeToggle">
-                    <i class="fas fa-sun"></i>
+            <div class="theme-toggle-wrapper">
+                <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-sun"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                 </button>
             </div>
 
             <h1>YouTube Downloader</h1>
-            <div class="version">v2.1(beta)</div>
+            <div class="version">v3.1(beta)</div>
 
             <form id="downloadForm">
                 <div class="input-group">
@@ -77,23 +84,51 @@
         </div>
     </div>
 
+    <footer>
+        <p>&copy; 2023 Jmlabaco. All rights reserved.</p>
+    </footer>
+
     <script>
     // Theme toggle functionality
     const themeToggle = document.getElementById('themeToggle');
-    const themeIcon = themeToggle.querySelector('i');
     const html = document.documentElement;
 
+    // Function to set theme
+    function setTheme(theme) {
+        html.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+        updateThemeToggle(theme);
+    }
+
+    // Function to update theme toggle button
+    function updateThemeToggle(theme) {
+        themeToggle.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+        themeToggle.classList.toggle('dark', theme === 'dark');
+    }
+
+    // Check for saved theme preference or prefer-color-scheme
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    if (savedTheme) {
+        setTheme(savedTheme);
+    } else if (prefersDark) {
+        setTheme('dark');
+    } else {
+        setTheme('light');
+    }
+
     themeToggle.addEventListener('click', () => {
-        if (html.getAttribute('data-theme') === 'light') {
-            html.setAttribute('data-theme', 'dark');
-            themeIcon.classList.remove('fa-sun');
-            themeIcon.classList.add('fa-moon');
-        } else {
-            html.setAttribute('data-theme', 'light');
-            themeIcon.classList.remove('fa-moon');
-            themeIcon.classList.add('fa-sun');
-        }
+        const currentTheme = html.getAttribute('data-theme');
+        const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+        setTheme(newTheme);
     });
+
+    // YouTube URL validation function
+    function isValidYouTubeUrl(url) {
+        const youtubeRegex = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/;
+        return youtubeRegex.test(url);
+    }
 
     // Form submission and video handling
     const form = document.getElementById('downloadForm');
@@ -112,6 +147,13 @@
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        const videoURL = videoURLInput.value;
+
+        if (!isValidYouTubeUrl(videoURL)) {
+            alert('Please enter a valid YouTube URL.');
+            return;
+        }
+
         submitButton.disabled = true;
         loader.style.display = 'block';
         submitButton.querySelector('span').textContent = 'Processing...';
@@ -124,7 +166,6 @@
         audioButton.querySelector('span').textContent = 'Download Audio';
 
         try {
-            const videoURL = videoURLInput.value;
             const response = await fetch('/download', {
                 method: 'POST',
                 headers: {
@@ -143,6 +184,14 @@
             thumbnailElement.src = data.thumb;
             videoSourceElement.src = data.video;
             audioSource.src = data.audio;
+
+            // Update download links with video title
+            const sanitizedTitle = data.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            const videoFileName = `${sanitizedTitle}.mp4`;
+            const audioFileName = `${sanitizedTitle}.mp3`;
+
+            videoSourceElement.setAttribute('download', videoFileName);
+            audioSource.setAttribute('download', audioFileName);
 
             downloadLinks.classList.add('visible');
             videoURLInput.value = '';
@@ -164,13 +213,30 @@
         }
     });
 
+    // Video click functionality for download
+    videoElement.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (videoSourceElement.src) {
+            const link = document.createElement('a');
+            link.href = videoSourceElement.src;
+            link.download = videoSourceElement.getAttribute('download');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } else {
+            alert('Video is not available yet. Please download a video first.');
+        }
+    });
+
     // Audio button functionality
     audioButton.addEventListener('click', () => {
         if (audioSource.src) {
-            audioButton.style.display = 'none';
-            audioPlayer.style.display = 'block';
-            audioPlayer.load();
-            audioPlayer.play();
+            const link = document.createElement('a');
+            link.href = audioSource.src;
+            link.download = audioSource.getAttribute('download');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         } else {
             alert('Audio is not available yet. Please download a video first.');
         }
@@ -180,14 +246,13 @@
     const disclaimer = document.getElementById('disclaimer');
     const acceptBtn = document.getElementById('acceptBtn');
 
-    if (!localStorage.getItem('disclaimerAccepted')) {
-        disclaimer.style.display = 'flex';
-    }
+    // Show disclaimer every time
+    disclaimer.style.display = 'flex';
 
     acceptBtn.addEventListener('click', () => {
         disclaimer.style.display = 'none';
-        localStorage.setItem('disclaimerAccepted', 'true');
     });
     </script>
 </body>
 </html>
+
