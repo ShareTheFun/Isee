@@ -37,8 +37,8 @@
                 </button>
             </div>
 
-            <h1>YouTube Downloader</h1>
-            <div class="version">v3.1(beta)</div>
+            <h1 id="introText">YouTube Downloader</h1>
+            <div class="version">v3.5</div>
 
             <form id="downloadForm">
                 <div class="input-group">
@@ -85,7 +85,7 @@
     </div>
 
     <footer>
-        <p>&copy; 2023 Jmlabaco. All rights reserved.</p>
+        <p id="copyright">&copy; 2025 Jmlabaco. All rights reserved.</p>
     </footer>
 
     <script>
@@ -180,12 +180,14 @@
                 throw new Error(data.error);
             }
 
+            // Update title element directly without animation
             titleElement.textContent = data.title;
+
             thumbnailElement.src = data.thumb;
             videoSourceElement.src = data.video;
             audioSource.src = data.audio;
 
-            // Update download links with video title
+            // Update download attributes for video and audio
             const sanitizedTitle = data.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
             const videoFileName = `${sanitizedTitle}.mp4`;
             const audioFileName = `${sanitizedTitle}.mp3`;
@@ -196,12 +198,18 @@
             downloadLinks.classList.add('visible');
             videoURLInput.value = '';
             thumbnailElement.style.display = 'block';
+            thumbnailElement.classList.add('fade-in');
 
             setTimeout(() => {
-                thumbnailElement.style.display = 'none';
-                videoElement.style.display = 'block';
-                videoElement.load();
-                videoElement.play();
+                thumbnailElement.classList.remove('fade-in');
+                thumbnailElement.classList.add('fade-out');
+                setTimeout(() => {
+                    thumbnailElement.style.display = 'none';
+                    videoElement.style.display = 'block';
+                    videoElement.classList.add('fade-in');
+                    videoElement.load();
+                    videoElement.play();
+                }, 500);
             }, 5000);
 
         } catch (error) {
@@ -213,20 +221,56 @@
         }
     });
 
+    // Typing animation function
+    function typeWriter(text, element, speed = 50) {
+        let i = 0;
+        function type() {
+            if (i < text.length) {
+                element.textContent += text.charAt(i);
+                i++;
+                setTimeout(type, speed);
+            } else {
+                element.classList.remove('typing');
+            }
+        }
+        type();
+    }
+
     // Video click functionality for download
     videoElement.addEventListener('click', (e) => {
         e.preventDefault();
-        if (videoSourceElement.src) {
+        // Show download options
+        showDownloadOptions(videoElement);
+    });
+
+    // Add a new function to show download options
+    function showDownloadOptions(element) {
+        const rect = element.getBoundingClientRect();
+        const downloadOptions = document.createElement('div');
+        downloadOptions.className = 'download-options-popup';
+        downloadOptions.innerHTML = `
+          <div class="download-option" data-action="download">Download</div>
+          <div class="download-option" data-action="cancel">Cancel</div>
+        `;
+        downloadOptions.style.position = 'absolute';
+        downloadOptions.style.top = `${rect.bottom}px`;
+        downloadOptions.style.left = `${rect.left}px`;
+        document.body.appendChild(downloadOptions);
+
+        downloadOptions.addEventListener('click', (e) => {
+          const action = e.target.dataset.action;
+          if (action === 'download') {
             const link = document.createElement('a');
             link.href = videoSourceElement.src;
             link.download = videoSourceElement.getAttribute('download');
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        } else {
-            alert('Video is not available yet. Please download a video first.');
-        }
-    });
+          }
+          document.body.removeChild(downloadOptions);
+        });
+      }
+
 
     // Audio button functionality
     audioButton.addEventListener('click', () => {
@@ -245,13 +289,44 @@
     // Disclaimer modal
     const disclaimer = document.getElementById('disclaimer');
     const acceptBtn = document.getElementById('acceptBtn');
+    const introText = document.getElementById('introText');
 
     // Show disclaimer every time
     disclaimer.style.display = 'flex';
 
+    // Intro text cycling
+    const introMessages = [
+        "YouTube Downloader",
+        "Made by Mart John Labaco",
+        "Download Your Favorite Videos",
+        "Easy to Use, Fast Downloads"
+    ];
+    let currentMessageIndex = 0;
+
+    function cycleIntroMessage() {
+        introText.style.opacity = '0';
+
+        setTimeout(() => {
+            currentMessageIndex = (currentMessageIndex + 1) % introMessages.length;
+            introText.textContent = '';
+            introText.classList.add('typing');
+            typeWriter(introMessages[currentMessageIndex], introText);
+            introText.style.opacity = '1';
+        }, 500); // Wait for fade out to complete
+    }
+
+    // Start cycling messages after accepting the disclaimer
     acceptBtn.addEventListener('click', () => {
         disclaimer.style.display = 'none';
+
+        // Start cycling messages
+        setInterval(cycleIntroMessage, 5000);
     });
+
+    // Initialize with the first message
+    introText.textContent = '';
+    introText.classList.add('typing');
+    typeWriter(introMessages[0], introText);
     </script>
 </body>
 </html>
