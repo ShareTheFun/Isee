@@ -109,11 +109,20 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      background: var(--card-bg);
+      padding: 0.5rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      border: 1px solid var(--border);
     }
+
     .theme-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
       width: 24px;
       height: 24px;
-      transition: all 0.3s ease;
+      color: var(--text);
     }
     h1 {
       font-size: 2rem;
@@ -311,53 +320,23 @@
       100% { transform: rotate(360deg); }
     }
     /* Settings button (three dots) and menu styles */
-    .video-settings-button {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      color: #fff;
-      background: rgba(0, 0, 0, 0.5);
-      padding: 5px;
-      border-radius: 50%;
-      cursor: pointer;
-      z-index: 5;
-      transition: background-color 0.3s ease;
-    }
-    .video-settings-button:hover {
-      background: rgba(0, 0, 0, 0.7);
-    }
-    .video-settings-menu {
-      position: absolute;
-      top: 40px;
-      right: 10px;
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 5px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      display: none;
-      z-index: 6;
-      padding: 10px;
-      min-width: 150px;
-    }
-    .video-settings-menu .menu-item {
-      margin: 5px 0;
-      cursor: pointer;
-      padding: 5px;
-      border-radius: 3px;
-      transition: background-color 0.3s ease;
-    }
-    .video-settings-menu .menu-item:hover {
-      background-color: var(--background);
-    }
-    .video-settings-menu .menu-item select {
-      width: 100%;
-      margin-top: 5px;
-      padding: 3px;
-      border-radius: 3px;
-      border: 1px solid var(--border);
-      background-color: var(--card-bg);
-      color: var(--text);
-    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     .audio-container {
       margin-top: 1rem;
     }
@@ -411,7 +390,7 @@
       font-size: 1.5rem;
     }
     .modal-content p {
-      margin-bottom: 1rem;
+      margin-bottom: 1.rem;
     }
     .modal-content ul {
       margin-bottom: 1.5rem;
@@ -499,6 +478,36 @@
         font-size: 0.9rem;
       }
     }
+    .video-controls {
+      display: flex;
+      align-items: center;
+      background-color: rgba(0, 0, 0, 0.7);
+      padding: 10px;
+      border-radius: 0 0 5px 5px;
+    }
+
+    .video-controls button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 0 5px;
+    }
+
+    .video-controls input[type="range"] {
+      flex-grow: 1;
+      margin: 0 10px;
+    }
+
+    .video-controls select {
+      background-color: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: none;
+      padding: 5px;
+      border-radius: 3px;
+    }
+
   </style>
 </head>
 <body>
@@ -528,7 +537,6 @@
     <div class="card">
       <div class="theme-info">
         <div id="themeIcon" class="theme-icon"></div>
-        <span id="currentTime"></span>
       </div>
 
       <h1 id="introText">YouTube Downloader</h1>
@@ -555,24 +563,16 @@
               <source id="videoSource" src="/placeholder.svg" type="video/mp4" />
               Your browser does not support the video tag.
             </video>
-            <!-- Settings button (three dots) -->
-            <div id="videoSettingsButton" class="video-settings-button">
-              <i class="fas fa-ellipsis-v"></i>
-            </div>
-            <!-- Settings menu -->
-            <div id="videoSettingsMenu" class="video-settings-menu">
-              <div class="menu-item" data-action="download-video">Download Video</div>
-              <div class="menu-item">
-                Playback Speed:
-                <select id="playbackSpeedSelect">
-                  <option value="0.5">0.5x</option>
-                  <option value="0.75">0.75x</option>
-                  <option value="1" selected>1x</option>
-                  <option value="1.25">1.25x</option>
-                  <option value="1.5">1.5x</option>
-                  <option value="2">2x</option>
-                </select>
-              </div>
+            <div class="video-controls">
+              <button id="playPauseBtn"><i class="fas fa-play"></i></button>
+              <input type="range" id="videoProgress" min="0" max="100" value="0">
+              <select id="playbackSpeed">
+                <option value="0.5">0.5x</option>
+                <option value="1" selected>1x</option>
+                <option value="1.5">1.5x</option>
+                <option value="2">2x</option>
+              </select>
+              <button id="downloadVideoBtn"><i class="fas fa-download"></i></button>
             </div>
           </div>
         </div>
@@ -614,9 +614,8 @@
       const theme = getTheme(hour);
 
       html.setAttribute('data-theme', theme);
-      currentTimeElement.textContent = now.format('HH:mm:ss');
 
-      // Update theme icon
+      // Update theme icon only
       const iconPath = getThemeIcon(theme, hour);
       themeIcon.innerHTML = `<img src="${iconPath}" alt="Theme icon" width="24" height="24">`;
     }
@@ -692,27 +691,26 @@
         if (data.error) {
           throw new Error(data.error);
         }
-        titleElement.textContent = data.title;
-        thumbnailElement.src = data.thumb;
+
+        // Update title and video source
+        titleElement.textContent = data.title || 'Untitled';
         videoSourceElement.src = data.video;
         audioButton.dataset.audioSrc = data.audio;
-        var sanitizedTitle = data.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+        // Set video title for download
+        var sanitizedTitle = (data.title || 'video').replace(/[^a-z0-9]/gi, '_').toLowerCase();
         videoSourceElement.setAttribute('download', sanitizedTitle + ".mp4");
+
+        // Show download options
         downloadLinks.classList.add('visible');
         videoURLInput.value = '';
-        thumbnailElement.style.display = 'block';
-        thumbnailElement.classList.add('fade-in');
-        setTimeout(function () {
-          thumbnailElement.classList.remove('fade-in');
-          thumbnailElement.classList.add('fade-out');
-          setTimeout(function () {
-            thumbnailElement.style.display = 'none';
-            videoElement.style.display = 'block';
-            videoElement.classList.add('fade-in');
-            videoElement.load();
-            videoElement.play();
-          }, 500);
-        }, 5000);
+
+        // Display video player
+        videoElement.style.display = 'block';
+        videoElement.classList.add('fade-in');
+        videoElement.load();
+        videoElement.play().catch(console.error);
+
       } catch (error) {
         alert("Error: " + error.message);
       } finally {
@@ -722,6 +720,55 @@
       }
     });
 
+
+    function showLoadingIndicator() {
+      var loadingIndicator = document.createElement("div");
+      loadingIndicator.id = "loadingIndicator";
+      loadingIndicator.style.position = "fixed";
+      loadingIndicator.style.top = "0";
+      loadingIndicator.style.left = "0";
+      loadingIndicator.style.width = "100%";
+      loadingIndicator.style.height = "100%";
+      loadingIndicator.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+      loadingIndicator.style.display = "flex";
+      loadingIndicator.style.justifyContent = "center";
+      loadingIndicator.style.alignItems = "center";
+      loadingIndicator.style.zIndex = "9999";
+
+      var animation = document.createElement("div");
+      animation.style.width = "50px";
+      animation.style.height = "50px";
+      animation.style.border = "3px solid #ffffff";
+      animation.style.borderRadius = "50%";
+      animation.style.animation = "pulse 1.5s ease-in-out infinite";
+
+      var style = document.createElement("style");
+      style.textContent = `
+        @keyframes pulse {
+          0% { transform: scale(0.8); opacity: 0.7; }
+          50% { transform: scale(1.2); opacity: 1; }
+          100% { transform: scale(0.8); opacity: 0.7; }
+        }
+      `;
+
+      document.head.appendChild(style);
+      loadingIndicator.appendChild(animation);
+      document.body.appendChild(loadingIndicator);
+    }
+
+    function hideLoadingIndicator() {
+      var loadingIndicator = document.getElementById("loadingIndicator");
+      if (loadingIndicator) {
+        loadingIndicator.remove();
+      }
+    }
+
+    function updateLoadingPercentage(percentage) {
+      var percentageText = document.getElementById("downloadPercentage");
+      if (percentageText) {
+        percentageText.textContent = percentage + "%";
+      }
+    }
     audioButton.addEventListener('click', async function () {
       var audioURL = audioButton.dataset.audioSrc;
       if (audioURL && audioURL !== '/placeholder.svg') {
@@ -755,71 +802,59 @@
       }
     });
 
-    // Settings menu for video: download and playback speed
-    var videoSettingsButton = document.getElementById("videoSettingsButton");
-    var videoSettingsMenu = document.getElementById("videoSettingsMenu");
-    var playbackSpeedSelect = document.getElementById("playbackSpeedSelect");
+    const videoPlayer = document.getElementById('videoPlayer');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const videoProgress = document.getElementById('videoProgress');
+    const playbackSpeed = document.getElementById('playbackSpeed');
+    const downloadVideoBtn = document.getElementById('downloadVideoBtn');
 
-    videoSettingsButton.addEventListener("click", function (e) {
-      e.stopPropagation();
-      if (videoSettingsMenu.style.display === "block") {
-        videoSettingsMenu.style.display = "none";
+    playPauseBtn.addEventListener('click', () => {
+      if (videoPlayer.paused) {
+        videoPlayer.play();
+        playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
       } else {
-        videoSettingsMenu.style.display = "block";
+        videoPlayer.pause();
+        playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
       }
     });
 
-    document.addEventListener("click", function () {
-      videoSettingsMenu.style.display = "none";
+    videoPlayer.addEventListener('timeupdate', () => {
+      const progress = (videoPlayer.currentTime / videoPlayer.duration) * 100;
+      videoProgress.value = progress;
     });
 
-    videoSettingsMenu.querySelector('[data-action="download-video"]').addEventListener("click", function (e) {
-      e.stopPropagation();
-      var safeTitle = titleElement.textContent.trim().replace(/[^a-z0-9]/gi, '_').toLowerCase() || "video";
-      // Use the proxy-video route to force a download with a custom filename.
-      var proxyUrl = "/proxy-video?url=" + encodeURIComponent(videoSourceElement.src) + "&title=" + encodeURIComponent(safeTitle);
-      var downloadLink = document.createElement("a");
-      downloadLink.href = proxyUrl;
-      downloadLink.download = safeTitle + ".mp4";
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
-      videoSettingsMenu.style.display = "none";
+    videoProgress.addEventListener('input', () => {
+      const time = (videoProgress.value / 100) * videoPlayer.duration;
+      videoPlayer.currentTime = time;
     });
 
-    playbackSpeedSelect.addEventListener("change", function () {
-      videoElement.playbackRate = parseFloat(this.value);
+    playbackSpeed.addEventListener('change', () => {
+      videoPlayer.playbackRate = parseFloat(playbackSpeed.value);
     });
 
-    function showLoadingIndicator() {
-      var loadingIndicator = document.createElement("div");
-      loadingIndicator.id = "loadingIndicator";
-      loadingIndicator.style.position = "fixed";
-      loadingIndicator.style.top = "0";
-      loadingIndicator.style.left = "0";
-      loadingIndicator.style.width = "100%";
-      loadingIndicator.style.height = "100%";
-      loadingIndicator.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
-      loadingIndicator.style.display = "flex";
-      loadingIndicator.style.justifyContent = "center";
-      loadingIndicator.style.alignItems = "center";
-      loadingIndicator.style.zIndex = "9999";
-      var spinner = document.createElement("div");
-      spinner.style.width = "50px";
-      spinner.style.height = "50px";
-      spinner.style.border = "5px solid #f3f3f3";
-      spinner.style.borderTop = "5px solid #3498db";
-      spinner.style.borderRadius = "50%";
-      spinner.style.animation = "spin 1s linear infinite";
-      loadingIndicator.appendChild(spinner);
-      document.body.appendChild(loadingIndicator);
-    }
-    function hideLoadingIndicator() {
-      var loadingIndicator = document.getElementById("loadingIndicator");
-      if (loadingIndicator) {
-        loadingIndicator.remove();
+    downloadVideoBtn.addEventListener('click', async () => {
+      const videoSrc = videoSourceElement.src;
+      const mainTitle = titleElement.textContent.trim().replace(/[^a-z0-9]/gi, '_') || "video";
+      const proxyUrl = `/proxy-video?url=${encodeURIComponent(videoSrc)}&title=${encodeURIComponent(mainTitle)}`;
+
+      try {
+        const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error('Download failed');
+        const blob = await response.blob();
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = `${mainTitle}.mp4`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadUrl);
+      } catch (error) {
+        console.error('Error downloading video:', error);
+        alert('Error downloading video. Please try again.');
       }
-    }
+    });
+
     function typeWriter(text, element, speed) {
       speed = speed || 50;
       var i = 0;

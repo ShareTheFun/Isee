@@ -1,75 +1,109 @@
-const express = require("express");
-const path = require("path");
-const { ytdown } = require("nayan-videos-downloader");
-const fetch = require("node-fetch"); // Using node-fetch version 2.x for CommonJS
+const express = require("express")
+const path = require("path")
+const { ytdown } = require("nayan-videos-downloader")
+const fetch = require("node-fetch")
 
-const app = express();
-const port = 3000;
+const app = express()
+const port = 3000
 
-app.use(express.static(path.join(__dirname, "public")));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, "public")))
+app.use(express.urlencoded({ extended: true }))
 
-app.get("/", function (req, res) {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"))
+})
 
-app.post("/download", async function (req, res) {
-  const videoURL = req.body.videoURL;
+app.post("/download", async (req, res) => {
+  const videoURL = req.body.videoURL
   try {
-    const downloadData = await ytdown(videoURL);
-    res.json(downloadData.data);
-  } catch (error) {
-    console.error("Error fetching download data:", error);
-    res.status(500).json({ error: "Something went wrong. Please try again." });
-  }
-});
+    const downloadData = await ytdown(videoURL)
 
-// Proxy route for audio downloads
-// Query parameters: url (original audio URL) and title (main title)
-app.get("/proxy-audio", async function (req, res) {
-  const audioUrl = req.query.url;
-  const mainTitle = req.query.title || "audio";
+    // Ensure we have valid data
+    if (!downloadData || !downloadData.data) {
+      throw new Error("Failed to fetch video data")
+    }
+
+    // Send only the required data
+    res.json({
+      title: downloadData.data.title || "Untitled",
+      video: downloadData.data.video || "",
+      audio: downloadData.data.audio || "",
+    })
+  } catch (error) {
+    console.error("Error fetching download data:", error)
+    res.status(500).json({ error: "Failed to process video. Please try again." })
+  }
+})
+
+// Enhanced proxy route for audio downloads
+app.get("/proxy-audio", async (req, res) => {
+  const audioUrl = req.query.url
+  const mainTitle = req.query.title || "audio"
+
   if (!audioUrl) {
-    return res.status(400).send("Missing audio url");
+    return res.status(400).json({ error: "Missing audio URL" })
   }
-  try {
-    const response = await fetch(audioUrl);
-    if (!response.ok) {
-      return res.status(500).send("Error fetching audio from source");
-    }
-    const data = await response.buffer();
-    res.setHeader("Content-Type", "audio/mpeg");
-    res.setHeader("Content-Disposition", `attachment; filename="${mainTitle}.mp3"`);
-    res.send(data);
-  } catch (error) {
-    console.error("Proxy audio error:", error);
-    res.status(500).send("Error fetching audio");
-  }
-});
 
-// Proxy route for video downloads
-// Query parameters: url (original video URL) and title (main title)
-app.get("/proxy-video", async function (req, res) {
-  const videoUrl = req.query.url;
-  const mainTitle = req.query.title || "video";
+  try {
+    const response = await fetch(audioUrl)
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch audio: ${response.statusText}`)
+    }
+
+    // Get content type from response
+    const contentType = response.headers.get("content-type")
+
+    // Set appropriate headers
+    res.setHeader("Content-Type", contentType || "audio/mpeg")
+    res.setHeader("Content-Disposition", `attachment; filename="${mainTitle}.mp3"`)
+
+    // Stream the response
+    response.body.pipe(res)
+  } catch (error) {
+    console.error("Proxy audio error:", error)
+    res.status(500).json({ error: "Failed to download audio. Please try again." })
+  }
+})
+
+// Enhanced proxy route for video downloads
+app.get("/proxy-video", async (req, res) => {
+  const videoUrl = req.query.url
+  const mainTitle = req.query.title || "video"
+
   if (!videoUrl) {
-    return res.status(400).send("Missing video url");
+    return res.status(400).json({ error: "Missing video URL" })
   }
-  try {
-    const response = await fetch(videoUrl);
-    if (!response.ok) {
-      return res.status(500).send("Error fetching video from source");
-    }
-    const data = await response.buffer();
-    res.setHeader("Content-Type", "video/mp4");
-    res.setHeader("Content-Disposition", `attachment; filename="${mainTitle}.mp4"`);
-    res.send(data);
-  } catch (error) {
-    console.error("Proxy video error:", error);
-    res.status(500).send("Error fetching video");
-  }
-});
 
-app.listen(port, function () {
-  console.log("Server running at http://localhost:" + port);
-});
+  try {
+    const response = await fetch(videoUrl)
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch video: ${response.statusText}`)
+    }
+
+    // Get content type from response
+    const contentType = response.headers.get("content-type")
+
+    // Set appropriate headers
+    res.setHeader("Content-Type", contentType || "video/mp4")
+    res.setHeader("Content-Disposition", `attachment; filename="${mainTitle}.mp4"`)
+
+    // Stream the response
+    response.body.pipe(res)
+  } catch (error) {
+    console.error("Proxy video error:", error)
+    res.status(500).json({ error: "Failed to download video. Please try again." })
+  }
+})
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack)
+  res.status(500).json({ error: "Something went wrong! Please try again." })
+})
+
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`)
+})
+
